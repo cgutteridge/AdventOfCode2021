@@ -48,14 +48,14 @@ package Grid;
 sub new {
 	my( $class ) = @_;
 
-	return bless [], $class;
+	return bless { grid=>[], width=>0, height=>0 }, $class;
 }
 
 sub overlapping_points {
 	my( $self ) = @_;
 
 	my $n = 0;
-	foreach my $grid_row ( @$self ) {
+	foreach my $grid_row ( @{$self->{grid}} ) {
 		next if !defined $grid_row;
 		foreach my $cell ( @$grid_row ) {
 			$n++ if defined $cell && $cell > 1;
@@ -67,20 +67,19 @@ sub overlapping_points {
 sub inc {
 	my( $self, $point ) = @_;
 
-	$self->[$point->y]=[] if( !defined $self->[$point->y] );
-	$self->[$point->y]->[$point->x]=0 if( !defined $self->[$point->y]->[$point->x] );
-	$self->[$point->y]->[$point->x]++;
+	$self->{grid}->[$point->y]=[] if( !defined $self->{grid}->[$point->y] );
+	$self->{grid}->[$point->y]->[$point->x]=0 if( !defined $self->{grid}->[$point->y]->[$point->x] );
+	$self->{grid}->[$point->y]->[$point->x]++;
+	$self->{height} = $point->y+1 if( $point->y+1>$self->{height} );
+	$self->{width} = $point->x+1 if( $point->x+1>$self->{width} );
 }
 
 sub draw {
 	my( $self ) = @_;
 
-	foreach my $grid_row ( @$self ) {
-		if( !defined $grid_row ) {
-			print "...\n" ;
-			next;
-		}
-		foreach my $cell ( @$grid_row ) {
+	for( my $y=0;$y<$self->{height};$y++ ) {
+		for( my $x=0;$x<$self->{width};$x++ ) {
+			my $cell = $self->{grid}->[$y]->[$x];
 			if( !defined $cell ) {
 				print ".";
 			} else {
