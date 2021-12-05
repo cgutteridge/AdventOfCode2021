@@ -34,7 +34,7 @@ foreach my $line ( @lines ) {
 	}
 }
 
-$grid->draw;
+$grid->draw if $file eq "test";
 
 my $n = $grid->overlapping_points;
 
