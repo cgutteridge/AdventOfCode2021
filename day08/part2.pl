@@ -94,8 +94,6 @@ foreach my $combo ( @$data ) {
 		my $encoded_digit_means = undef;
 		$encoded_digit_means = 1 if( length($encoded_digit) == 2 ); 
 		$encoded_digit_means = 4 if( length($encoded_digit) == 4 ); 
-		$encoded_digit_means = 7 if( length($encoded_digit) == 3 ); 
-		$encoded_digit_means = 8 if( length($encoded_digit) == 7 ); 
 
 		next unless defined $encoded_digit_means;
 
@@ -111,133 +109,61 @@ foreach my $combo ( @$data ) {
 	}
 	# hard bit
 	HARDBIT: while( %$unknown_digits ) {
-		print "\nHB LOOP needs: ".join( ",", sort keys %$unknown_digits )."\n";
-
-		# for each unmapped numher, see if it can only be one unmapped code, if so set it as that and repeat the hard bit until everything is known
+		print "\nHB LOOP needs to resolve: ".join( ",", sort keys %$unknown_digits )."\n";
 
 		DIGIT: foreach my $digit ( keys %$unknown_digits ) {
-			# try this digit  unknown codes only
-			print " Considering: $digit\n";
-			my $digit_could_by_encoded_as;
+			# looking and the output digits we've not yet got a mapping for
+			my $code_could_be;
 			ENCDIGIT: foreach my $encoded_digit ( @{$combo->{examples}} ) {
 				next ENCDIGIT if( defined $known_digits->{$encoded_digit} );
 
-				print "  Could be $encoded_digit?\n";
-				# test to see if $encoded_digit could be $digit
-				# first, check they have the same number of segments
-				if( scalar keys %{$MAP_MAP->[$digit]} != length( $encoded_digit ) ) {
-					print "  rejected on length\n";
-					next ENCDIGIT;
-				}
+				# is there a combination of allowed things in the $seg_map that gets us from  $encoded_digit to the codes required for $digit
+				my $source = [ sort split( //, $encoded_digit ) ];
+				my $target = [ sort keys %{$MAP_MAP->[$digit]} ];
+				next ENCDIGIT if( scalar @$source != scalar @$target );
+				print sprintf( "could %s map to %s?\n", join( ",", @$source),join( ",",@$target ));
 
-				# all an input segments must match to each required output segment
-				# make a copy of the required segment map for $digit
-				# all targets ($req) must have a source
-				my $req = {%{$MAP_MAP->[$digit]}};
-print "Required segments for $digit\n";
-print Dumper( $req );
-				foreach my $segment_in_input ( sort split( //, $encoded_digit ) ) {
-					my @could_be_output_segment = sort keys %{$seg_map->{$segment_in_input}};
-					foreach my $output_segment ( @could_be_output_segment ) {
-#print "$segment_in_input could map to $output_segment\n";
-						delete $req->{$output_segment };
-					}
-				}
-				if( %$req ) {
-					print "  rejected; missed requirements of segments : ".join( "", sort keys %$req )."\n";
-					next ENCDIGIT;
-				}
-				# all output segments in the digit must match to at least one required input segment
-				# all sources must have a target
-				$req = {};
-				foreach my $segment_in_input ( split( //, $encoded_digit )) { $req->{$segment_in_input} = 1; }
-print "Required source codes for $encoded_digit\n";
-print Dumper( $req );
-				foreach my $segment_in_input ( sort split( //, $encoded_digit ) ) {
-					my @could_be_output_segment = sort keys %{$seg_map->{$segment_in_input}};
-					foreach my $output_segment ( @could_be_output_segment ) {
-#print "$segment_in_input could map from $output_segment\n";
-						delete $req->{$segment_in_input };
-					}
-				}
-				if( %$req ) {
-					print "  rejected; missed requirements of segments : ".join( "", sort keys %$req )."\n";
-					next ENCDIGIT;
-				}
-				
-	
-				print "  $encoded_digit is a candidate\n";
-				# ok it's a candidate
-				if( defined $digit_could_by_encoded_as ) {
-					# dang, more than one candidate, skip this code for later;
-					print "  2+ canidates, trying next unknown encoded digit\n";
-					next DIGIT;
-				}
-				$digit_could_by_encoded_as = $encoded_digit;
+				my $result = could_it_map( $source, $target, $seg_map );
+				print "...".$result."\n";	
+exit;
 			}
-			if( !defined $digit_could_by_encoded_as ) {
-				die "No candidates found for $digit";
-			}
-
-			print "yay, single candidate for $digit is $digit_could_by_encoded_as\n";
-			exit;
-		}			
-
-		# for each unmapped code, see if it can only be one number, if so set it as that and repeat the hard bit until everything is known
-
-		my $encoded_digit_could_mean = {};
-		ENCDIGIT: foreach my $encoded_digit ( @{$combo->{examples}} ) {
-			next ENCDIGIT if( defined $known_digits->{$encoded_digit} );
-			# try this code against unknown digits only
-			print " Considering: $encoded_digit\n";
-
-			DIGIT: foreach my $digit ( keys %$unknown_digits ) {
-				print "  Could be $digit?\n";
-				# test to see if $encoded_digit could be $digit
-				# first, check they have the same number of segments
-				if( scalar keys %{$MAP_MAP->[$digit]} != length( $encoded_digit ) ) {
-					print "  rejected on length\n";
-					next DIGIT;
-				}
-				# an input segment must match to each required output segment
-				# make a copy of the required segment map for $digit
-				my $req = {%{$MAP_MAP->[$digit]}};
-				foreach my $segment_in_input ( split( //, $encoded_digit ) ) {
-					my @could_be_output_segment = keys %{$seg_map->{$segment_in_input}};
-					foreach my $output_segment ( @could_be_output_segment ) {
-						delete $req->{$output_segment };
-					}
-				}
-				if( %$req ) {
-					print "  rejected; missed requirements of segments : ".join( "", sort keys %$req )."\n";
-					next DIGIT;
-				}
-	
-				print "  $digit is a candidate\n";
-				# ok it's a candidate
-#				if( defined $encoded_digit_could_mean ) {
-#					# dang, more than one candidate, skip this code for later;
-#					print "  2+ canidates, trying next unknown encoded digit\n";
-#					next ENCDIGIT;
-#				}
-				$encoded_digit_could_mean->{$encoded_digit}->{$digit} = 1;
-			}
-			if( !defined $encoded_digit_could_mean ) {
-				die "No candidates found for $encoded_digit";
-			}
-
-		}			
-
-		print Dumper( $encoded_digit_could_mean );
+		}
 		exit;
+	}
 
 #xxx
 
-	}	
-	exit;
 }
 	
 exit;
+
+sub could_it_map {
+	my( $sources, $targets, $map ) = @_;
+print "cim(".join( "", @$sources ).")(". join( "", @$targets ).")\n";
+:q
+	# if the lists are empty then they can map. yay.
+	return 1 if scalar @$sources == 0;
+
+	my $ok = 0;
+	my @sources_tail = @$sources;
+	my $sources_head = shift @sources_tail;
+
+	# this matches if the head matches to anything AND the tail matches to the targets minus the thing the head matches to
+	foreach my $source_segment ( sort keys %{ $map->{$sources_head}} ) {
+		my $target_to_remove = $map->{$sources_head}->{$source_segment};
+		my $sources2 = [];
+		my $targets2 = [];
+print "(".join( "", @$sources2 ).")(". join( "", @$targets2 ).")($source_segment )($target_to_remove )\n";
+		foreach my $source ( @$sources ) { push @$sources2, $source  unless $source eq $source_segment; }
+		foreach my $target ( @$targets ) { push @$targets2, $target  unless $target eq $target_to_remove; }
+		if( could_it_map( $sources2, $targets2, $map ) ) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 
 sub print_seg_map {
 	my( $seg_map ) = @_;
