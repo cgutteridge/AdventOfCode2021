@@ -30,6 +30,7 @@ foreach my $row ( @rows ) {
 
 	push @$data, $combo;
 }
+#print Dumper( $data );
 
 #   0:      1:      2:      3:      4:
 #  aaaa    ....    aaaa    aaaa    ....
@@ -94,6 +95,8 @@ foreach my $combo ( @$data ) {
 		my $encoded_digit_means = undef;
 		$encoded_digit_means = 1 if( length($encoded_digit) == 2 ); 
 		$encoded_digit_means = 4 if( length($encoded_digit) == 4 ); 
+		$encoded_digit_means = 7 if( length($encoded_digit) == 3 ); 
+		$encoded_digit_means = 8 if( length($encoded_digit) == 7 ); 
 
 		next unless defined $encoded_digit_means;
 
@@ -113,20 +116,29 @@ foreach my $combo ( @$data ) {
 
 		DIGIT: foreach my $digit ( keys %$unknown_digits ) {
 			# looking and the output digits we've not yet got a mapping for
-			my $code_could_be;
-			ENCDIGIT: foreach my $encoded_digit ( @{$combo->{examples}} ) {
+			my $code_could_be =[];
+print "\n";
+print "digit=$digit -- considering ".join( ",", sort @{$combo->{examples}})."\n";
+			ENCDIGIT: foreach my $encoded_digit ( sort @{$combo->{examples}} ) {
+print ":: $encoded_digit\n";
 				next ENCDIGIT if( defined $known_digits->{$encoded_digit} );
 
 				# is there a combination of allowed things in the $seg_map that gets us from  $encoded_digit to the codes required for $digit
 				my $source = [ sort split( //, $encoded_digit ) ];
 				my $target = [ sort keys %{$MAP_MAP->[$digit]} ];
 				next ENCDIGIT if( scalar @$source != scalar @$target );
-				print sprintf( "could %s map to %s?\n", join( ",", @$source),join( ",",@$target ));
+				print sprintf( "*could %s map to %s? ", join( ",", @$source),join( ",",@$target ));
 
-				my $result = could_it_map( $source, $target, $seg_map );
-				print "...".$result."\n";	
-exit;
+				my $result = could_it_map( $source, $target, $seg_map, "" );
+				print "".($result?"yes":"no")."\n";	
+				if( $result ) { 
+					#if( $code_could_be ) { print "!! 2 options for digit, trying next\n"; next DIGIT; } # multiple options
+					push @$code_could_be, $encoded_digit;
+				}
 			}
+			print "\n";
+			print "$digit .. could be ".join( ",",@$code_could_be, )."\n";
+			print "\n";
 		}
 		exit;
 	}
@@ -138,9 +150,8 @@ exit;
 exit;
 
 sub could_it_map {
-	my( $sources, $targets, $map ) = @_;
-print "cim(".join( "", @$sources ).")(". join( "", @$targets ).")\n";
-:q
+	my( $sources, $targets, $map, $desc ) = @_;
+#print "cim...[$desc] (".join( "", @$sources ).")(". join( "", @$targets ).")\n";
 	# if the lists are empty then they can map. yay.
 	return 1 if scalar @$sources == 0;
 
@@ -148,15 +159,14 @@ print "cim(".join( "", @$sources ).")(". join( "", @$targets ).")\n";
 	my @sources_tail = @$sources;
 	my $sources_head = shift @sources_tail;
 
-	# this matches if the head matches to anything AND the tail matches to the targets minus the thing the head matches to
-	foreach my $source_segment ( sort keys %{ $map->{$sources_head}} ) {
-		my $target_to_remove = $map->{$sources_head}->{$source_segment};
-		my $sources2 = [];
+	# this function matches if the head matches to something AND the tail matches to the targets minus the thing the head matches to
+
+	# loop over each thing the head matches to( or nothing)
+	foreach my $target_for_head ( sort keys %{ $map->{$sources_head}} ) {
 		my $targets2 = [];
-print "(".join( "", @$sources2 ).")(". join( "", @$targets2 ).")($source_segment )($target_to_remove )\n";
-		foreach my $source ( @$sources ) { push @$sources2, $source  unless $source eq $source_segment; }
-		foreach my $target ( @$targets ) { push @$targets2, $target  unless $target eq $target_to_remove; }
-		if( could_it_map( $sources2, $targets2, $map ) ) {
+#print "(".join( "", @$sources2 ).")(". join( "", @$targets2 ).")($sources_head )($target_for_head )\n";
+		foreach my $target ( @$targets ) { push @$targets2, $target  unless $target eq $target_for_head; }
+		if( could_it_map( \@sources_tail, $targets2, $map, $desc.",$sources_head=>$target_for_head" ) ) {
 			return 1;
 		}
 	}
