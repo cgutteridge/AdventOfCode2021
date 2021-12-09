@@ -45,12 +45,15 @@ for(my $y=0;$y<$height;++$y) {
 		push @$nadirs,[$x,$y];
 	}
 }
-print Dumper ($basin);
+my $sizes = [];
 for( my $nadir_index=0; $nadir_index<@$nadirs; ++$nadir_index ) {
 	my $backlog = [ $nadirs->[$nadir_index] ];
-
+	my $size = 1;
+	#print "\n\nNEW INDEX => $nadir_index\n\n";
 	# while we've not looked at the edges of everything in the known basin	
 	while( @$backlog ) {
+		#print "NEW LOOP for $nadir_index with BACKLOG\n";
+		#foreach my $c ( @$backlog ) { print sprintf( "* %d,%d\n", $c->[0], $c->[1] ); }
 		my $cell = shift @$backlog;
 		my $dirs;
 		push @$dirs,[-1,0] if( $cell->[0]>0 );
@@ -58,26 +61,31 @@ for( my $nadir_index=0; $nadir_index<@$nadirs; ++$nadir_index ) {
 		push @$dirs,[0,-1] if( $cell->[1]>0 );
 		push @$dirs,[0,1]  if( $cell->[1]<$height-1 );
 		foreach my $dir ( @$dirs ) {
-			my $x = $cell->[1]+$dir->[1];
-			my $y = $cell->[0]+$dir->[0];
+			my $x = $cell->[0]+$dir->[0];
+			my $y = $cell->[1]+$dir->[1];
 			next if $basin->[$y]->[$x] == $nadir_index;
 			if( $basin->[$y]->[$x] >= 0 ) {
 				print_basin( $basin);
 				print "$x,$y\n";
-				print "$nadir_index\n";
+				print "ni => $nadir_index\n";
+				print "basin($x,$y) => ".$basin->[$y]->[$x] ."\n";
 				die;
 			}
 			next if $grid->[$y]->[$x] == 9;
 			# found a peanut
 			$basin->[$y]->[$x] = $nadir_index;
 			push @$backlog, [$x,$y];
-			print "$nadir_index adding [$x,$y]\n";
+			$size++;
+			#print "$nadir_index adding [$x,$y]\n";
 		}
-	}	
+	}
+
+	print "BASIN $nadir_index size $size\n";
+	push @$sizes,$size;
 
 }
-
-my $n=0;
+my @largest_first = sort { $b <=> $a } @$sizes;
+my $n = $largest_first[0] * $largest_first[1] * $largest_first[2];
 print sprintf( "PART2 => %d\n", $n );
 exit;
 
@@ -86,7 +94,7 @@ sub print_basin {
 
 	for(my $y=0;$y<$height;++$y) { 
 		for(my $x=0;$x<$width;++$x) { 
-			print $basin->[$y]->[$x]." ";	
+			print sprintf( "%3d ",$basin->[$y]->[$x]);
 		}
 		print "\n";
 	}
