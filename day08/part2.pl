@@ -52,7 +52,7 @@ foreach my $row ( @rows ) {
 
 
 # 0 - abcefg
-# 1 - ef
+# 1 - cf
 # 2 - acdeg
 # 3 - acdfg
 # 4 - bcdf
@@ -62,24 +62,24 @@ foreach my $row ( @rows ) {
 # 8 - abcdefg
 # 9 - abcdfg
 
-my @map = qw/ abcefg ef acdeg acdfg bcdf abdfg abdefg acf abcdefg abcdfg /;
+my @digit_sections = qw/ abcefg cf acdeg acdfg bcdf abdfg abdefg acf abcdefg abcdfg /;
 
 # hash of segments in a display digit
 my $MAP_MAP = [];
-for(my $i=0;$i<@map;++$i ) {
-	my $digit = $map[$i];
+for(my $i=0;$i<@digit_sections;++$i ) {
+	my $digit = $digit_sections[$i];
 	foreach my $seg ( split( //, $digit ) ) {
 		$MAP_MAP->[$i]->{$seg} = 1;
 	}
 }
-
+my $n = 0;
 foreach my $combo ( @$data ) {
-	print Dumper( $combo );
+	#print Dumper( $combo );
 	# maps the abc code to a digit 0-9
 	my $known_digits = {};
-	my $known_codes = {};
+	my $unknown_codes = {};
 	my $unknown_digits = { 0=>1, 1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1, 7=>1, 8=>1, 9=>1, };
-	# maps input letters a-g to the location(s) they must be in output
+	# maps input wire letters a-g to the segment locations(s) they must be in output
 	my $seg_map = {
 		a => { a=>1, b=>1, c=>1, d=>1, e=>1, f=>1, g=>1 },
 		b => { a=>1, b=>1, c=>1, d=>1, e=>1, f=>1, g=>1 },
@@ -90,7 +90,14 @@ foreach my $combo ( @$data ) {
 		g => { a=>1, b=>1, c=>1, d=>1, e=>1, f=>1, g=>1 },
 	};
 	
-	# first do the easy ones§
+	foreach my $encoded_digit ( @{$combo->{examples}} ) {
+		$unknown_codes->{$encoded_digit} = 1;	
+	}
+
+	#print "STARTING MAP\n";
+	#print_seg_map( $seg_map );
+
+	# first do the easy ones
 	foreach my $encoded_digit ( @{$combo->{examples}} ) {
 		my $encoded_digit_means = undef;
 		$encoded_digit_means = 1 if( length($encoded_digit) == 2 ); 
@@ -101,53 +108,117 @@ foreach my $combo ( @$data ) {
 		next unless defined $encoded_digit_means;
 
 		$known_digits->{$encoded_digit} = $encoded_digit_means;
-		$known_codes->{$encoded_digit_means} = $encoded_digit_means;
 		delete $unknown_digits->{$encoded_digit_means};
+		delete $unknown_codes->{$encoded_digit};
+	
 		remove_segments_from_map( $seg_map, $encoded_digit, $encoded_digit_means );
 
-		print $encoded_digit." = $encoded_digit_means\n";
-		print "segments_used_by_digit=".join( "", sort keys %{$MAP_MAP->[$encoded_digit_means]})."\n";
+		#print $encoded_digit." = $encoded_digit_means\n";
+		#print "segments_used_by_digit=".join( "", sort keys %{$MAP_MAP->[$encoded_digit_means]})."\n";
 
-		print_seg_map( $seg_map );
+		#print_seg_map( $seg_map );
 	}
 	# hard bit
-	HARDBIT: while( %$unknown_digits ) {
-		print "\nHB LOOP needs to resolve: ".join( ",", sort keys %$unknown_digits )."\n";
 
-		DIGIT: foreach my $digit ( keys %$unknown_digits ) {
-			# looking and the output digits we've not yet got a mapping for
-			my $code_could_be =[];
-print "\n";
-print "digit=$digit -- considering ".join( ",", sort @{$combo->{examples}})."\n";
-			ENCDIGIT: foreach my $encoded_digit ( sort @{$combo->{examples}} ) {
-print ":: $encoded_digit\n";
-				next ENCDIGIT if( defined $known_digits->{$encoded_digit} );
 
-				# is there a combination of allowed things in the $seg_map that gets us from  $encoded_digit to the codes required for $digit
-				my $source = [ sort split( //, $encoded_digit ) ];
-				my $target = [ sort keys %{$MAP_MAP->[$digit]} ];
-				next ENCDIGIT if( scalar @$source != scalar @$target );
-				print sprintf( "*could %s map to %s? ", join( ",", @$source),join( ",",@$target ));
+	my $sol = legal_mapping(  [sort keys %$unknown_codes],  [sort keys %$unknown_digits] , $seg_map );
+	$sol =~ s/=>/,/g;
+	$sol =~ s/,OK//g;
+	my %solhash = split( /,/,$sol );	
+	foreach my $code ( keys %solhash ) { $known_digits->{$code} = $solhash{$code}; }
 
-				my $result = could_it_map( $source, $target, $seg_map, "" );
-				print "".($result?"yes":"no")."\n";	
-				if( $result ) { 
-					#if( $code_could_be ) { print "!! 2 options for digit, trying next\n"; next DIGIT; } # multiple options
-					push @$code_could_be, $encoded_digit;
-				}
-			}
-			print "\n";
-			print "$digit .. could be ".join( ",",@$code_could_be, )."\n";
-			print "\n";
-		}
-		exit;
+	my $v = "";
+	foreach my $code ( @{$combo->{code}} ) {
+		#print "$code => ".$known_digits->{$code}."\n";
+		$v .= $known_digits->{$code};
 	}
+	print "$v\n";
 
-#xxx
+	$n+=$v;
+
 
 }
-	
+print sprintf( "PART 2 = %d\n", $n );	
 exit;
+
+sub legal_mapping {
+	my( $codes, $digits, $map, $depth ) = @_;
+
+	$depth = 0 if !defined $depth;
+#print "    "x$depth;
+#print "legal_mapping( $depth, ".join( " ",@$codes ).", ".join( " ",@$digits ).")\n";
+#print_seg_map( $map );
+
+
+	if( scalar @$codes == 0 ) { return "OK"; }
+
+	my $codes2 = [ @$codes ];
+	my $code = shift @$codes2;
+
+	my @solutions = ();
+
+	# i is offset in digits we'll try mapping code to
+	DIGIT: foreach my $digit ( @$digits ) {
+
+		if( length($code) != length( $digit_sections[$digit] ) ) {
+			next DIGIT;
+		}
+		#print "    "x$depth;
+		#print "Considering $code=>$digit\n";
+		#print "    "x$depth;
+		#print "$digit has sections ".join( "", sort keys %{$MAP_MAP->[$digit]} )."\n";
+		
+		# can all the source wires could map to at least one segment in the digit
+		my @wires = split( //, $code );
+		foreach my $wire ( @wires ) {
+			my $ok = 0;
+			#print "    "x$depth;
+			#print "Wire $wire can map to section ".join( "", sort keys %{$map->{$wire}} )."\n";
+		
+			SECTION: foreach my $section ( keys %{$map->{$wire}} ) {
+				if( defined $MAP_MAP->[$digit]->{$section} ) { 
+					$ok = 1;
+					last SECTION;
+				}
+			}
+			if( !$ok ) { 
+				#print "    "x$depth;
+				#print "wire $wire can't match up\n";
+				next DIGIT;
+			}
+			#print "    "x$depth;
+			#print "wire $wire ok\n";
+		}
+
+		my $digits2 = [];
+		foreach my $digit_i ( @$digits ) {
+			push @$digits2, $digit_i unless $digit == $digit_i;
+		}
+		my $newmap = {};
+		foreach my $wire ( keys %$map ) {
+			foreach my $segment ( keys %{$map->{$wire}} ) {
+				$newmap->{$wire}->{$segment} = 1;
+			}
+		}
+
+		remove_segments_from_map( $newmap, $code, $digit );
+
+		my $res = legal_mapping( $codes2, $digits2, $newmap, $depth+1 );
+		if( defined $res ) {
+			push @solutions, "$code=>$digit,$res";
+		}
+	}
+
+	#print "    "x$depth;
+	#print "D$depth solutions= ".(scalar @solutions )."\n";
+	if( @solutions == 1 ) {
+		return $solutions[0];
+	}
+	if( @solutions > 1 )  {
+		die "multiple solutions";
+	}
+	return undef;
+}
 
 sub could_it_map {
 	my( $sources, $targets, $map, $desc ) = @_;
@@ -188,11 +259,13 @@ sub print_seg_map {
 	foreach my $segment_in_output ( keys %{$could_be} ) {
 		$text->{$segment_in_output} = join( "", sort keys %{$could_be->{$segment_in_output}} );
 	}
+	print "\n";
 	print sprintf( "       %7s\n", $text->{a} );
 	print sprintf( "%7s       %7s\n", $text->{b},$text->{c} );
 	print sprintf( "       %7s\n", $text->{d} );
 	print sprintf( "%7s       %7s\n", $text->{e},$text->{f} );
 	print sprintf( "       %7s\n", $text->{g} );
+	print "\n";
 }
 
 sub print_seg_map2 {
@@ -210,7 +283,6 @@ sub print_seg_map2 {
 
 sub remove_segments_from_map {
 	my( $seg_map, $encoded_digit, $encoded_digit_means ) = @_;
-
 	# remove segments from the map that we know are not true as they are not used by this digit
 	my @segments_used_by_encoded_digit = keys %{$MAP_MAP->[$encoded_digit_means]};
 	foreach my $segment_in_input ( split( //, $encoded_digit ) ) {
