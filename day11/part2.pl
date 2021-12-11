@@ -17,7 +17,6 @@ my @rows = readfile( $file );
 # End of boilerplate
 ############################################################
 
-my $n=0;
 
 my $grid = [];
 foreach my $row ( @rows ) {
@@ -31,7 +30,9 @@ my $WIDTH = scalar @{$grid->[0]};
 my $HEIGHT = scalar @$grid;
 
 my $LOOPS = 100;
-for( my $loop=1;$loop<=$LOOPS;++$loop) {
+for( my $loop=1; 1;++$loop) {
+	my $flashes_this_loop = 0;
+
 	my @flashes = ();
 	for(my $y=0;$y<$HEIGHT;++$y ) {
 		for(my $x=0;$x<$WIDTH;++$x ) {
@@ -43,7 +44,7 @@ for( my $loop=1;$loop<=$LOOPS;++$loop) {
 		}
 	}
 	while( my $flash = shift @flashes ) {
-		$n++;
+		$flashes_this_loop++;
 		#print "\n";
 		#print_grid($grid);
 		#print "TODO:";
@@ -70,15 +71,16 @@ for( my $loop=1;$loop<=$LOOPS;++$loop) {
 		#print "\n";
 	}
 		
-	print "\n";
-	print "STEP=$loop\n";		
-	print_grid($grid);
+	#print_grid($grid);
+	if( $flashes_this_loop == $WIDTH*$HEIGHT ) { 
+		print sprintf( "PART2 => %d\n", $loop );
+		exit;
+	}
 }
 
 
 
 
-print sprintf( "PART1 => %d\n", $n );
 exit;
 
 sub print_grid
