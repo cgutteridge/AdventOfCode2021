@@ -43,6 +43,7 @@ my $s={};
 foreach my $e ( @p ) { 
 	$s->{$e}++;
 }
+foreach my $e ( sort keys %$s ) { print "$e => ".$s->{$e}."\n"; }
 my $min;
 my $min_e;
 my $max;

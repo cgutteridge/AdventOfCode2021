@@ -22,53 +22,43 @@ my @rows = readfile( $file );
 
 my $r1 = shift @rows;
 my @p = split(//, $r1);
+my $p = {};
+for(my $i=0;$i<length($r1)-1;$i++) {
+	$p->{substr($r1,$i,2)}++;
+}
+my $first = substr($r1,0,1);
+my $last = substr($r1,length($r1)-1,1);
+print "F,L = $first,$last\n";
+
 shift @rows;
 my $t = {};
 my $els = {};
 foreach my $row ( @rows ) {
 	my( $k,$v ) = split( / -> /, $row );
-	$t->{$k}=$v;
-	$els->{substr($k,0,1)}=1;
-	$els->{substr($k,1,1)}=1;
-	$els->{$v}=1;
+	$t->{$k}=[substr($k,0,1).$v,$v.substr($k,1,1)];
 }
-print Dumper( $els );
-my $t2 = {};
-#foreach my $e1 ( keys %$els ) { foreach my $e2 ( keys %$els ) { foreach my $e3 ( keys %$els ) { foreach my $e4 ( keys %$els ) { foreach my $e5 ( keys %$els ) { foreach my $e6 ( keys %$els ) { foreach my $e7 ( keys %$els ) { foreach my $e8 ( keys %$els ) { $t2->{$e1.$e2.$e3.$e4.$e5.$e6.$e7.$e8} = $e1.$t->{$e1.$e2}.$e2.$t->{$e2.$e3}.$e3.$t->{$e3.$e4}.$e4.$t->{$e4.$e5}.$e5.$t->{$e5.$e6}.$e6.$t->{$e6.$e7}.$e7.$t->{$e7.$e8}.$e8; }}}} }}}}
-$els->{_}=1;
-$t->{__}="_";
-foreach my $e ( keys %$els ) { $t->{$e."_"}="_"; }
-foreach my $e1 ( keys %$els ) {
-foreach my $e2 ( keys %$els ) {
-foreach my $e3 ( keys %$els ) {
-foreach my $e4 ( keys %$els ) {
-	my $k = $e1.$e2.$e3.$e4;
-	if( $k=~m/_/ ) { next if $k=~m/_[A-Z]/; }
-	$t2->{$k} = $e1.$t->{$e1.$e2}.$e2.$t->{$e2.$e3}.$e3.$t->{$e3.$e4}.$e4;
-}}}}
 
 
-
-for(my $loop=1;$loop<=21;++$loop) {
-print $loop."\n";
-print join( "",@p)."\n";
-	while( $p[-1] eq "_" ) { pop @p; }
-	push @p, "_","_","_";
-
-	my @p2=();
-	for(my $i=0;$i<scalar @p;$i+=3) {
-		last if( $p[$i] eq "_" ); 
-		my $k = $p[$i].$p[$i+1].$p[$i+2].$p[$i+3];
-		my $v = $t2->{$k};
-		if( $i!=0 ) { $v = substr( $v,1); } # strip the first element off all but the first result
-		foreach my $e666 ( split ( //, $v ) ) { push @p2, $e666; }
+for(my $loop=1;$loop<=40;++$loop ) {
+#print Dumper( $p );
+	my $p2 = {};
+	foreach my $pair ( keys %$p ) {
+		my $pair2a = $t->{$pair}->[0];
+		my $pair2b = $t->{$pair}->[1];
+		$p2->{$pair2a}+=$p->{$pair};
+		$p2->{$pair2b}+=$p->{$pair};
 	}
-	@p=@p2;
-}	
-my $s={};
-foreach my $e ( @p ) { 
-	$s->{$e}++;
+	$p=$p2;
+
 }
+
+my $s={};
+$s->{$first}+=0.5;
+$s->{$last}+=0.5;
+foreach my $pair ( keys %$p ) { 
+	foreach my $e ( split ( //, $pair ) ) { $s->{$e}+=$p->{$pair}/2; }
+}
+foreach my $e ( sort keys %$s ) { print "$e => ".($s->{$e})."\n"; }
 my $min;
 my $min_e;
 my $max;
