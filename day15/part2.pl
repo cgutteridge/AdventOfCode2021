@@ -19,18 +19,32 @@ my @rows = readfile( $file );
 ############################################################
 # End of boilerplate
 ############################################################
+my $scale = 5;
 
-my $cave =[];
-foreach my $row ( @rows ) {
-	my $crow = [];
-	foreach my $v ( split( //, $row )) {
-		push @$crow, $v+0;
+my $cave = [];
+my $W1 = scalar @rows;
+my $H1 = scalar @rows;
+for( my $y=0;$y<@rows;++$y ) {
+	my @cells = split( //, $rows[$y] );
+	for( my $x=0; $x<@cells; ++$x ) {
+		my $v = $cells[$x]+0;
+		for( my $yr=0;$yr<$scale;++$yr ) {
+			for( my $xr=0;$xr<$scale;++$xr ) {
+				my $ov = $v+$xr+$yr;
+				if( $ov>9 ) { $ov-=9; }
+				$cave->[$yr*$H1+$y]->[$xr*$W1+$x] = $ov;
+			}
+		}
 	}
-	push @$cave, $crow;
 }
-#print Dumper( $cave );
+
+
 my $W = scalar @{$cave->[0]};
 my $H = scalar @$cave;
+print "$W x $H\n";
+
+
+for(my $y=0;$y<$H;$y++) { for(my $x=0;$x<$W;$x++) { print $cave->[$y]->[$x]; } print "\n"; }
 
 # assume only right and down movement
 
@@ -94,7 +108,7 @@ my $rx=$W-1;
 my $ry=$H-1;
 while( $rx!=0 || $ry!=0 ) {
 	$route->{"$rx,$ry"}=1;
-print "$rx,$ry\n";
+#print "$rx,$ry\n";
 	if( $dir->[$ry]->[$rx] eq "v" ) { 
 		$ry--;
 	} elsif( $dir->[$ry]->[$rx] eq ">" ) { 
@@ -103,19 +117,19 @@ print "$rx,$ry\n";
 		die;
 	}
 }
-print Dumper($route);
+#print Dumper($route);
 	
 	
 
-for(my $y=00;$y<$H;$y++) { for(my $x=00;$x<$W;$x++) { my $v= $mindist->[$y]->[$x]; $v = 999 unless defined $v; print sprintf( " %3d:%d:%s", $v,$cave->[$y]->[$x],$dir->[$y]->[$x] ); } print "\n"; }
+#for(my $y=00;$y<$H;$y++) { for(my $x=00;$x<$W;$x++) { my $v= $mindist->[$y]->[$x]; $v = 999 unless defined $v; print sprintf( " %3d:%d:%s", $v,$cave->[$y]->[$x],$dir->[$y]->[$x] ); } print "\n"; }
 
-print "<pre>";
-for(my $y=00;$y<$H;$y++) { for(my $x=00;$x<$W;$x++) { my $v= $mindist->[$y]->[$x]; $v = 999 unless defined $v; 
-if( $route->{"$x,$y"} ) { print "<b>"; }
-print sprintf( " %3d:%d:%s", $v,$cave->[$y]->[$x],$dir->[$y]->[$x] ); 
-if( $route->{"$x,$y"} ) { print "</b>"; }
-} print "\n"; }
-print "</pre>";
+#print "<pre>";
+#for(my $y=00;$y<$H;$y++) { for(my $x=00;$x<$W;$x++) { my $v= $mindist->[$y]->[$x]; $v = 999 unless defined $v; 
+#if( $route->{"$x,$y"} ) { print "<b>"; }
+#print sprintf( " %3d:%d:%s", $v,$cave->[$y]->[$x],$dir->[$y]->[$x] ); 
+#if( $route->{"$x,$y"} ) { print "</b>"; }
+#} print "\n"; }
+#print "</pre>";
 
 $n = $mindist->[$H-1]->[$W-1];	
 
