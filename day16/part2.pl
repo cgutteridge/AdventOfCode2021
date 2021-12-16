@@ -30,7 +30,9 @@ foreach my $hex ( split //, $rows[0] ) {
 #print join( "",@bits)."\n";
 
 my( $struct, @tail ) = parse( @bits );
-$n = $struct->{vsum};
+
+$n = solve( $struct );
+
 
 ############################################################
 # Output
@@ -99,8 +101,73 @@ sub parse {
 			$npack--;
 		}
 	}
-	return( {vsum=>$vsum, version=>$version, type=>$type, parts=>$packets}, @bits );
+	return( {vsum=>$vsum, version=>$version, type=>$type, packets=>$packets}, @bits );
 		
 	#print join( "",@bits)."\n";
 	return {};
+}
+
+sub solve {
+	my( $p ) = @_;
+
+	if( $p->{type} eq "literal" ) { return $p->{value}; }
+
+	if( $p->{type} == 0 ) {
+		# sum
+		my $n = 0;
+		foreach my $sp ( @{$p->{packets}} ) {
+			$n += solve($sp);
+		}
+		return $n;
+	}
+
+	if( $p->{type} == 1 ) {
+		# product
+		my $n = 1;
+		foreach my $sp ( @{$p->{packets}} ) {
+			$n *= solve($sp);
+		}
+		return $n;
+	}
+
+	if( $p->{type} == 2 ) {
+		# min
+		my $n;
+		foreach my $sp ( @{$p->{packets}} ) {
+			my $p = solve($sp);
+			$n = $p if( !defined $n || $p<$n );
+		}
+		return $n;
+	}
+
+	if( $p->{type} == 3 ) {
+		# max
+		my $n;
+		foreach my $sp ( @{$p->{packets}} ) {
+			my $p = solve($sp);
+			$n = $p if( !defined $n || $p>$n );
+		}
+		return $n;
+	}
+
+	die if 2!=@{$p->{packets}};
+	my $a = solve($p->{packets}->[0]);
+	my $b = solve($p->{packets}->[1]);
+
+	if( $p->{type} == 5 ) {
+		# greater
+		return ( $a>$b ? 1 : 0 );
+	}
+
+	if( $p->{type} == 6 ) {
+		# less
+		return ( $a<$b ? 1 : 0 );
+	}
+
+	if( $p->{type} == 7 ) {
+		# greater
+		return ( $a==$b ? 1 : 0 );
+	}
+
+	die;
 }
