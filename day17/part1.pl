@@ -50,49 +50,36 @@ print "($minx,$maxx,$miny,$maxy)\n";
 
 
 
-# find all the X initial velocities that pass through the area
-my @xv_inits = ();
-XIV: for(my $xv_init=1;$xv_init<=$maxx;++$xv_init ) {
-	my $x = 0;	
-	my $xv = $xv_init;
-	while( $xv > 0 ) {
-		$x += $xv;
-		$xv--;
-		if( $x>=$minx && $x<=$maxx ) {
-			push @xv_inits,$xv_init;
-			next XIV;
-		}
-	}
-}
-print "".(scalar @xv_inits )."\n";
-
 
 my $best_apex;
 my $yv_init = 0;
 YIV: while(1) {
 	$yv_init++;
-	foreach my $xv_init ( @xv_inits ) {
+	XIV: for(my $xv_init=1;$xv_init<=$maxx;++$xv_init ) {
 		my $x = 0;	
 		my $y = 0;	
 		my $xv = $xv_init;
 		my $yv = $yv_init;
+		print "\n$xv,$yv: ";
 		my $apex;
-		while( $yv > 0 || $y>$miny ) {
-			if( !defined $apex || $y>$apex ) { $apex = $y; }
+		while( $yv > 0 || $y>=$miny ) {
+			print " $y";
 			$x += $xv;
 			$y += $yv;
 			$xv--;
 			$yv--;
+			if( !defined $apex || $y>$apex ) { $apex = $y; }
 			if( $x>=$minx && $x<=$maxx && $y>=$miny && $y<=$maxy ) {
 				print "$xv_init,$yv_init HIT! apex=$apex\n";
 				if( !defined $best_apex || $apex > $best_apex ) { $best_apex=$apex; }
-				next YIV;
+				next XIV;
 			}
 		}
 	
 	}
 }
-
+$n = $best_apex;
+#not 1891
 ############################################################
 # Output
 ############################################################
