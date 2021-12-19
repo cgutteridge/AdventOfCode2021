@@ -24,31 +24,86 @@ $rows[0] =~ m/target area: x=(-?\d+)\.\.(-?\d+), y=(-?\d+)\.\.(-?\d+)/;
 my($minx,$maxx,$miny,$maxy) = ($1+0,$2+0,$3+0,$4+0);
 print "($minx,$maxx,$miny,$maxy)\n";
 
-# x_acc = -1
-# x_vel = -1t + x_vel_init
-# x_pos = -2.t.t + t.x_vel_init + 0
+# work out all the times minx<=x<=maxx
 
-# x_vel_init values where x_pos>=xmin && xpos<=xmax
-# x_vel > 0
+#ya = -1
+#yv = initv + t.ya
+#y  = t*t*a/2 + t*(v0-a/2)
+#a = -1
 
-# y_acc = -1
-# y_vel = -1t + y_vel_init
-# y_pos = -2.t.t + t.y_vel_init + 0
+#y = t*t * -0.5 + t*(yv0 + 0.5 )
+#x = t*t * -0.5 + t*(xv0 + 0.5 )
+
+#0 = t*t * -0.5 + t*(yv0 + 0.5 ) - y
+#0 = t*t * -0.5 + t*(xv0 + 0.5 ) - x
+
+# t = (-b +- sqrt( b.b - 4.a.c ) / 2.a
+# a=-0.5
+# b=yv0+0.5
+# c=-y
+
+# t = (-b +- sqrt( b.b - 4.a.c ) / 2.a
+# t = (-(yv0+0.5) +- sqrt( (yv0+0.5)^2 - 4.(-0.5).(-y) ) / 2.(-0.5)
+
+# t = ( -yv0 - 0.5 +- sqrt( (yv0+0.5)^2 - 2y ) / -1
+# t = ( xv0 + 0.5 +- sqrt( (xv0+0.5)^2 - 2x ) 
+#x = t*t * -0.5 + t*(xv0 + 0.5 )
 
 
-# x_pos = -2.t.t + t.x_vel_init + 0
-# y_pos = -2.t.t + t.y_vel_init + 0
-
-# given x_pos,y_pos, what was X_vel_init & y_vel_init?
-# x_pos = -2.t.t + t.x_vel_init + 0
-# y_pos = -2.t.t + t.y_vel_init + 0
-
-# 0 = 2.t.t - t.x_vel_init + x_pos;
-# a=2
-# b=t.x_vel_init
-# c=x_pos
 
 
+
+XIV: for(my $xv0=1;$xv0<=$maxx;++$xv0 ) {
+	# t = ( xv0 + 0.5 +- sqrt( (xv0+0.5)^2 - 2x ) 
+
+	print "$xv0..\n";
+	my @sol = ();
+	my $sq1 = ($xv0 + 0.5)*($xv0 + 0.5 ) - $minx ;
+	if( $sq1 >= 0 ) {
+		print "MINLINE: ".join( ",", $xv0 + 0.5 + sqrt( $sq1 ), $xv0 + 0.5 - sqrt( $sq1 ) )."\n";
+	}
+	my $sq2 = ($xv0 + 0.5)*($xv0 + 0.5 ) - $maxx ;
+	if( $sq2 >= 0 ) {
+		print "MAXLINE: ".join( ",", $xv0 + 0.5 + sqrt( $sq2 ), $xv0 + 0.5 - sqrt( $sq2 ) )."\n";
+	}
+
+
+	
+
+}
+__DATA__
+
+# find xdir which lands in range with most steps
+my $best_iv;
+my $best_steps=0;
+	my $steps =0;
+	my $x = 0;	
+	my $xv = $xv_init;
+	my $hit = 0;
+	while( $x<=$maxx && $xv) {
+		if( $x>=$minx ) { $hit=1; }
+		$steps++;
+		$x+=$xv;
+		$xv--;
+	}
+	if( $hit && $steps>$best_steps ) {
+		$best_steps = $steps;
+		$best_iv = $xv_init;
+	}
+}
+
+print "BEST XIV = $best_iv\n";
+
+# number of steps to get from 0 to -ymin
+my $post_return_steps=0;
+my $y = 0;
+my $yv = 0;
+while( $y<$miny ) { <F2>
+
+print "
+exit;
+
+		
 
 
 my $best_apex;
