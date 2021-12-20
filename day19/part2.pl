@@ -185,7 +185,7 @@ my $beacons = {};
 
 foreach my $id ( keys %$routes ) {
 	my $scanner = $scanner_by_id->{$id};
-	my $sbeacons = $scanner->{b};
+	my $sbeacons = [ [0,0,0] ];
 	my $route = $routes->{$id};
  	print "$id..";
 	print "".(scalar @$sbeacons )." ";
@@ -221,16 +221,27 @@ foreach my $id ( keys %$routes ) {
 		if( $beacons->{$bid} ) { 
 			print "boink!\n";
 		} else {
-			$beacons->{$bid}=1;
+			$beacons->{$bid}=$beacon;
 		}
 	}
 	print "\n";
 }	
 
+print Dumper ($beacons);
+my @blist = values %$beacons;
+my $max = 0;
+for(my $i=0;$i<@blist;++$i) {
+	for(my $j=0;$j<@blist;++$j) {
+		next if $i==$j;
+		my $bi = $blist[$i];
+		my $bj = $blist[$j];
+		my $mn = abs($bi->[0]-$bj->[0])+ abs($bi->[1]-$bj->[1])+abs($bi->[2]-$bj->[2]);
+		if( $mn > $max ) { $max = $mn; }
+	}
+}
 
+$n= $max;
 
-
-$n = scalar keys %$beacons;
 ############################################################
 # Output
 ############################################################
