@@ -26,8 +26,7 @@ print "($xmin,$xmax,$ymin,$ymax)\n";
 
 my $times_to_xv0_hits = {};
 for( my $xv0=1;$xv0<$xmax+2;++$xv0 ) {
-	YV0: for( my $yv0=0;$yv0<(-$ymin+2);++$yv0 ) {
-		my $apex = 0;
+	YV0: for( my $yv0=$ymin;$yv0<(-$ymin+2);++$yv0 ) {
 		my $x = 0;
 		my $y = 0;
 		my $xv = $xv0;
@@ -37,10 +36,8 @@ for( my $xv0=1;$xv0<$xmax+2;++$xv0 ) {
 			$y+=$yv;
 			$xv-- if $xv>0;
 			$yv--;
-			if( $y>$apex ) { $apex = $y; }
 			if( $x>=$xmin && $x<=$xmax && $y>=$ymin && $y<=$ymax ) {
-				print "HIT $xv0,$yv0\n";
-				if( $apex > $n ) { $n = $apex; }
+				++$n;	
 				next YV0;
 			}
 		}
