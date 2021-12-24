@@ -1,0 +1,41 @@
+
+#inp w
+$w = shift @digits;
+
+#mul x 0
+#add x z
+#mod x 26
+#div z 1   
+#add x 10   
+$x = $x * 0;
+$x = $x + $z;
+$x = $x % 26;
+$z = abs( $z / $V1 );
+$x = $x + $V2;
+
+#eql x w
+#eql x 0
+#mul y 0
+#add y 25
+$x = $x == $w;
+$x = $x == 0;
+$y = $y * 0
+$y = $y + 25;
+
+#mul y x
+#add y 1
+#mul z y
+#mul y 0
+$y = $y * x
+$y = $y + 1
+$z = $z * $y
+$y = $y * 0
+
+#add y w
+#add y 13   # V3
+#mul y x
+#add z y
+$y = $y + $w
+$y = $y + $V3
+$y = $y * $x
+$z = $z + $y
