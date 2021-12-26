@@ -3,7 +3,7 @@ use warnings;
 
 sub process {
 my( $depth, @digits ) = @_;
-
+my $nb = join(",",@digits );
 my( $w,$x,$y,$z ) = (0,0,0,0);
 my $debug=0;
 if( $debug ) { 
@@ -35,6 +35,7 @@ return $z if $depth==1;
 # 2
 print "$z\n" if $debug;
 $w = shift @digits;
+if( !defined $w ) { die "depth was $depth - $nb"; }
 $x = $x * 0;
 $x = $x + $z;
 $x = $x % 26;

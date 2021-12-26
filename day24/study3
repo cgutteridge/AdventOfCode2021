@@ -9,7 +9,7 @@ $digit = shift @digits;
 
 
 
-$b = ($z % 26) + $V2 != $digit;
+$b = ($z % 26) + $V2 != $digit; # only true when V2<10
 
 $z = (int)( $z / $V1 ); 
 

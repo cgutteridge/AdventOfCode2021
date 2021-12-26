@@ -39,59 +39,68 @@ require "compiled.pl";
 #26,-11,15
 #26,-13,12
 #26,-10,8
+
+
+#
+#!!! = 29914999975365
+#!!! = 69914999975369
+#!!! = 59914999975368
+#!!! = 19914999975364
+#!!! = 49914999975367
+#!!! = 39914999975366
+
+
+
+
 if(0) {
-for my $a ( 1..9 ) {
-for my $b ( 1..9 ) {
-next if( $a==$b );
-print "$a//$b\n";
-my @base = ();
-for(1..14){ push @base, $a ; }
-push @base, $a;
-my $control = process(@base);
-for(1..14){
-	my @d = @base;
-	$d[$_] = $b;
-	my $p = process(@d );
-	if( $p ne $control ) { print "$a, $b, $_ -> $p\n";
+for my $a ( 0..9 ) {
+for my $b ( 0..9 ) {
+	my $d = "${a}991499997536${b}";
+	my $p = process( 14, split( //, $d ));
+	next unless $p==0;
+	print "$d ... $a, $b -> $p\n";
 }}
 print "\n";
-}}
 exit;
 }
 
 
 
-my $z_to_largest = {};
+my $z_to_smallest = {};
 for( my $digit=1; $digit<=9; ++$digit ) {
 	my $z = process( 1, $digit );
-	if( !defined $z_to_largest->{$z} || $digit > $z_to_largest->{$z} ) { 
-		$z_to_largest->{$z} = [$digit,[$digit]];
+	if( !defined $z_to_smallest->{$z} || $digit > $z_to_smallest->{$z} ) { 
+		$z_to_smallest->{$z} = [$digit,[$digit]];
 	}
 }
 print "-----\n";
-my $max;
+my $min;
 for( my $index=2;$index<=14;++$index ) {
-	print "INDEX=$index ".(scalar keys %$z_to_largest )."\n";
+	print "INDEX=$index ".(scalar keys %$z_to_smallest )."\n";
 	my  $elapsed = tv_interval ( $t0, [gettimeofday]);
 	print sprintf( "Elapsed time => %fs\n", $elapsed );
-	my $new_z_to_largest = {};
-	PRE: foreach my $prefix ( values %$z_to_largest ) {
+	my $new_z_to_smallest = {};
+	PRE: foreach my $prefix ( values %$z_to_smallest ) {
 		for( my $digit=9; $digit>=1; --$digit ) {
 #print Dumper( $prefix );
 #print join( ",", @{$prefix->[1]} )."+$digit\n";
 			my $z = process( $index, @{$prefix->[1]}, $digit );
 			my $v = $prefix->[0] * 10 + $digit;
-			if( !defined $new_z_to_largest->{$z} || $v > $new_z_to_largest->{$z}->[0] ) { 
-				$new_z_to_largest->{$z} = [ $v, [ @{$prefix->[1]}, $digit ] ];
-			}
-			if( $index==14 && $z==0 ) { 
-				print "!!! = $v\n";
-				if( !defined $max || $v>$max ) { $max = $v; }
+			if( $index!=14 ) {
+				if( !defined $new_z_to_smallest->{$z} || $v < $new_z_to_smallest->{$z}->[0] ) { 
+					$new_z_to_smallest->{$z} = [ $v, [ @{$prefix->[1]}, $digit ] ];
+				}	
+			} 
+			else {
+				if( $z==0 ) { 
+					print "!!! = $v\n";
+					if( !defined $min || $v<$min ) { $min = $v; }
+				}
 			}
 		}
 	}
-	$z_to_largest = $new_z_to_largest;
+	$z_to_smallest = $new_z_to_smallest;
 }
-print "got to end: ".(scalar keys %$z_to_largest )."\n";
+print "got to end: ".(scalar keys %$z_to_smallest )."\n";
 
-print "$max\n";
+print "$min\n";
